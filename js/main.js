@@ -25,7 +25,6 @@ replaceTrackOpt.onclick = setTrackOpt;
 let startTime;
 let videoIsOn = false;
 let useReplaceTrack = true;
-let needNegotiation = true;
 const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
 
@@ -212,7 +211,6 @@ function onIceStateChange(pc, event) {
 }
 
 function onNeededNegotiation(  ) {
-    //if (needNegotiation == false) {
         pc1.createOffer()
         .then(offer => {
                 console.log(`Offer from pc1\n${offer.sdp}`);
@@ -224,12 +222,10 @@ function onNeededNegotiation(  ) {
                 console.log(`Answer from pc2\n${answer.sdp}`);
                 return pc2.setLocalDescription(answer);
         })
-        .then(() => pc1.setRemoteDescription(pc2.localDescription)); 
-    //}
+        .then(() => pc1.setRemoteDescription(pc2.localDescription));
 }
 
 function upgrade() {
-  //upgradeButton.disabled = true;
 
     if (!pc1.onnegotiationneeded) {
         /*Avoiding triggered by addTrack...*/
@@ -256,11 +252,9 @@ function upgrade() {
             localVideo.srcObject = null;
             localVideo.srcObject = localStream;
             if (useReplaceTrack) {
-                if (pc1.getTransceivers().length < 2) {
-                    pc1.addTrack(videoTracks[0], localStream);
-                    needNegotiation = true;
-                    //return pc1.createOffer();
-                } else {
+                //if (pc1.getTransceivers().length < 2) {
+                //    pc1.addTrack(videoTracks[0], localStream);
+                //} else {
                     if (!RTCRtpTransceiver.prototype.setDirection) {
                         pc1.getSenders()[1].replaceTrack(videoTracks[0]);
                         pc1.getTransceivers()[1].direction = 'sendrecv';
@@ -270,20 +264,16 @@ function upgrade() {
                             pc1.getTransceivers()[2].stop();
                         }
 
-                        if (!window.added) {
-                            pc1.getTransceivers()[1].sender.replaceTrack(videoTracks[0]);
-                            window.added = true;
-                        }
-                        pc1.getTransceivers()[1].setDirection('sendrecv');
-                        
-                    needNegotiation = false;
-                    //return pc1.createOffer(); 
+                        //if (!window.added) {
+                        //    pc1.getTransceivers()[1].sender.replaceTrack(videoTracks[0]);
+                        //    window.added = true;
+                        //}
+                        pc1.getTransceivers()[1].setDirection('sendrecv');                      
                     }
-                }
+                //}
             } else {
                 if (pc1.getTransceivers().length < 2) {
                     pc1.addTrack(videoTracks[0], localStream);
-                    //return pc1.createOffer();
                 } else {
                     if (!RTCRtpTransceiver.prototype.setDirection) {
                         pc1.getTransceivers()[1].sender.replaceTrack(videoTracks[0]); 
@@ -297,7 +287,6 @@ function upgrade() {
                         pc1.getTransceivers()[1].setDirection('sendrecv');
                     }
 
-                    //return pc1.createOffer();
                 } 
             }
         })
