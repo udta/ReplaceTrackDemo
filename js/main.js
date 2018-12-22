@@ -23,7 +23,7 @@ hangupButton.onclick = hangup;
 replaceTrackOpt.onclick = setTrackOpt;
 
 let startTime;
-let videoIsOn = false;
+let videoIsOn = true;
 let useReplaceTrack = true;
 const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
@@ -38,7 +38,7 @@ remoteVideo.addEventListener('loadedmetadata', function() {
 
 remoteVideo.onresize = () => {
   console.log(`Remote video size changed to ${remoteVideo.videoWidth}x${remoteVideo.videoHeight}`);
-  console.warn('RESIZE', remoteVideo.videoWidth, remoteVideo.videoHeight);
+  console.log('RESIZE', remoteVideo.videoWidth, remoteVideo.videoHeight);
   // We'll use the first onsize callback as an indication that video has started
   // playing out.
   if (startTime) {
@@ -48,8 +48,9 @@ remoteVideo.onresize = () => {
   }
 };
 
-let localStream;
-let fakeStream;
+let localStream = undefined;
+let fakeStream  = undefined; 
+let remoteStream = undefined;
 let pc1;
 let pc2;
 const offerOptions = {
@@ -69,12 +70,19 @@ function gotStream(stream) {
   console.log('Received local stream');
   localVideo.srcObject = stream;
   localStream = stream;
-  callButton.disabled = false;
+  
+  if (fakeStream) {
+    callButton.disabled = false;
+  }
 }
 
 function gotFakeStream(stream) {
     console.log('Received fake stream');
     fakeStream = stream;
+
+    if (localStream) {
+      callButton.disabled = false;
+    }
 }
 
 function start() {
@@ -83,7 +91,7 @@ function start() {
   navigator.mediaDevices
     .getUserMedia({
       audio: true,
-      video: false
+      video: videoIsOn
     })
     .then(gotStream)
     .catch(e => alert(`getUserMedia() error: ${e.name}`));
@@ -169,14 +177,30 @@ function gotRemoteStream(e) {
   // reset srcObject to work around minor bugs in Chrome and Edge.
   remoteVideo.srcObject = null;
 
-  if ( e.streams[0] ) {
-      remoteVideo.srcObject = e.streams[0];
-  } else {
-      /*For work around in Safari*/
-      var newStream = new MediaStream();
-      newStream.addTrack(e.track);
-      remoteVideo.srcObject = newStream;
+  /*
+  if (remoteVideo.srcObject !== e.streams[0]) {
+    remoteVideo.srcObject = e.streams[0];
+    console.log('pc2 received remote stream');
   }
+  */
+
+
+  if (!remoteStream) {
+    if ( e.streams[0] ) {
+        remoteStream = e.streams[0];
+    } else {
+        //For work around in Safari
+        var newStream = new MediaStream();
+        newStream.addTrack(e.track);
+        remoteStream = newStream;
+    }
+    //remoteVideo.srcObject = remoteStream;
+  } else {
+      remoteStream.addTrack(e.track);
+      //remoteVideo.srcObject = e.track.getSources();
+  }
+
+  remoteVideo.srcObject = remoteStream;
 }
 
 function onCreateAnswerSuccess(desc) {
